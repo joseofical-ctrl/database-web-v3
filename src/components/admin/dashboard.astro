@@ -1,0 +1,18 @@
+---
+import AdminLayout from '../../layouts/admin.astro';
+import UploadForm from '../../components/admin/Uploadform.tsx';
+
+// Opcional: Podrías añadir lógica aquí para verificar si el usuario tiene una sesión activa
+// usando cookies, pero por ahora lo mantendremos simple.
+---
+
+<AdminLayout title="Dashboard | Base de Datos II">
+	<div class="w-full max-w-4xl bg-upla-dark rounded-xl border border-upla-primary/40 shadow-2xl p-8">
+		<header class="mb-8 border-b border-upla-primary/20 pb-4">
+			<h1 class="text-3xl font-heading text-white tracking-wider">PANEL DE CONTROL</h1>
+			<p class="text-upla-accent mt-2 font-body text-sm">Gestiona y sube nuevos trabajos al repositorio del curso.</p>
+		</header>
+
+		<UploadForm client:load />
+	</div>
+</AdminLayout>

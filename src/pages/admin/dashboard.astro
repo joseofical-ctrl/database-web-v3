@@ -1,0 +1,284 @@
+---
+import Layout from '../../layouts/layout.astro';
+import { pool } from '../../lib/db';
+import DocumentViewer from '../../components/Documentviewer';
+import TrabajoModal from '../../components/admin/Trabajos'; 
+
+let trabajos: any[] = []; 
+let totalTrabajos = 0;
+
+try {
+  const result = await pool.query('SELECT * FROM entregas');
+  totalTrabajos = result.rowCount || 0; 
+  
+  const transformados = result.rows.map(entrega => {
+    const partes = entrega.unidad_semana ? entrega.unidad_semana.split(' • ') : ['Unidad ?', 'Semana ?'];
+    const unidadTexto = partes[0] ? partes[0].trim().toUpperCase() : 'UNIDAD I';
+    const semanaTexto = partes[1] ? partes[1].trim() : 'Semana 0';
+    const numeroSemana = parseInt(semanaTexto.match(/\d+/)?.[0] || '0', 10);
+    
+    let pesoUnidad = 1;
+    if (unidadTexto.includes('II')) pesoUnidad = 2;
+    if (unidadTexto.includes('III')) pesoUnidad = 3;
+    if (unidadTexto.includes('IV')) pesoUnidad = 4;
+
+    const pesoOrden = (pesoUnidad * 100) + numeroSemana;
+    const urls = entrega.nombre_archivo ? entrega.nombre_archivo.split(',') : [];
+    const nombresCortos = urls.map((url: string) => url.split('/').pop()?.trim()).join(', ');
+    
+    const fechaFormat = new Date(entrega.fecha_subida).toLocaleDateString('es-PE', {
+      day: '2-digit', month: '2-digit', year: 'numeric'
+    });
+
+    return {
+      id: entrega.id,
+      unidad: unidadTexto,
+      semana: partes[1] ? partes[1].replace('Semana ', 'SEM ') : 'SEM ?',
+      titulo: entrega.titulo,
+      fecha: fechaFormat,
+      archivos: nombresCortos || 'Sin archivos',
+      peso: entrega.peso_mb ? `${entrega.peso_mb} MB` : '0 MB',
+      urlsOriginales: entrega.nombre_archivo,
+      pesoOrden
+    };
+  });
+
+  trabajos = transformados.sort((a, b) => a.pesoOrden - b.pesoOrden);
+
+} catch (error) {
+  console.error('Error conectando a Railway:', error);
+}
+---
+
+<Layout title="Dashboard Admin | Base de Datos II">
+    <section class="min-h-screen bg-[#050A18] pt-24 pb-20 px-6">
+        
+        {/* Efecto de luz de fondo */}
+        <div class="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-64 bg-upla-accent/5 blur-[120px] pointer-events-none"></div>
+
+        <div class="max-w-7xl mx-auto relative z-10">
+            
+            {/* 1. HEADER DEL DASHBOARD */}
+            <div class="flex flex-col md:flex-row justify-between items-center bg-gradient-to-r from-[#0a142c] to-[#050A18] p-8 md:p-10 rounded-[2.5rem] border border-white/5 shadow-2xl mb-8">
+                <div class="text-center md:text-left mb-6 md:mb-0">
+                    <span class="inline-flex items-center gap-2 px-4 py-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-black tracking-[0.3em] uppercase rounded-full mb-4">
+                        <span class="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span>
+                        Sesión Activa
+                    </span>
+                    <h1 class="text-3xl md:text-4xl font-black text-white tracking-tight uppercase">
+                        Panel de <span class="text-transparent bg-clip-text bg-gradient-to-r from-upla-accent to-blue-400">Control</span>
+                    </h1>
+                </div>
+                
+                <div class="flex gap-4">
+                    {/* Botón de Volver al Inicio Eliminado. Única salida: Cerrar Sesión */}
+                    <button id="btn-logout" class="px-8 py-4 bg-red-500/10 border border-red-500/30 text-red-400 rounded-2xl hover:bg-red-500 hover:text-white transition-all text-[10px] font-black uppercase tracking-[0.2em] shadow-lg">
+                        Cerrar Sesión
+                    </button>
+                </div>
+            </div>
+
+            {/* 2. ESTADÍSTICAS RÁPIDAS */}
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-[#0a142c] p-8 rounded-[2rem] border border-white/5 flex items-center gap-6 shadow-xl">
+                    <div class="w-14 h-14 rounded-2xl bg-upla-primary/10 flex items-center justify-center text-2xl border border-upla-primary/20">📂</div>
+                    <div>
+                        <p class="text-[10px] text-gray-500 uppercase tracking-[0.2em] font-black mb-1">Total Entregas</p>
+                        <p class="text-3xl font-black text-white">{totalTrabajos}</p>
+                    </div>
+                </div>
+                
+                <div class="bg-[#0a142c] p-8 rounded-[2rem] border border-white/5 flex items-center gap-6 shadow-xl">
+                    <div class="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center text-2xl border border-emerald-500/20">✅</div>
+                    <div>
+                        <p class="text-[10px] text-gray-500 uppercase tracking-[0.2em] font-black mb-1">Estado BD</p>
+                        <p class="text-xl font-black text-white">Sincronizado</p>
+                    </div>
+                </div>
+                
+                <button id="btn-nuevo-trabajo" class="group bg-gradient-to-br from-upla-primary/20 to-[#0a142c] p-8 rounded-[2rem] border border-upla-primary/30 flex items-center justify-between shadow-xl hover:border-upla-accent transition-all duration-300 w-full text-left">
+                    <div>
+                        <p class="text-[10px] text-upla-accent uppercase tracking-[0.2em] font-black mb-1">Acción Rápida</p>
+                        <p class="text-xl font-black text-white group-hover:text-upla-accent transition-colors">Subir Trabajo</p>
+                    </div>
+                    <div class="w-12 h-12 rounded-full bg-upla-accent text-[#0a142c] flex items-center justify-center text-2xl font-black group-hover:scale-110 group-hover:rotate-90 transition-all duration-300 shadow-[0_0_20px_rgba(0,180,216,0.4)]">
+                        +
+                    </div>
+                </button>
+            </div>
+
+            {/* 3. TABLA DE GESTIÓN DE TRABAJOS */}
+            <div class="bg-[#0a142c] border border-white/5 rounded-[2.5rem] p-8 md:p-10 shadow-[0_20px_50px_rgba(0,0,0,0.3)] overflow-hidden">
+                
+                <h3 class="text-xl font-black text-white uppercase tracking-[0.2em] mb-8 flex items-center gap-3">
+                    <span class="w-2 h-8 bg-upla-accent rounded-full inline-block"></span>
+                    Registros en Base de Datos
+                </h3>
+
+                <div class="overflow-x-auto custom-scroll pb-4">
+                    <table class="w-full text-left border-collapse min-w-[900px]">
+                        <thead>
+                            <tr class="text-[10px] text-gray-500 uppercase tracking-[0.2em] border-b border-white/10">
+                                <th class="pb-4 pl-4 font-black w-48">Unidad / Sem</th>
+                                <th class="pb-4 font-black">Título del Trabajo</th>
+                                <th class="pb-4 font-black w-48">Archivos</th>
+                                <th class="pb-4 font-black w-32">Fecha</th>
+                                <th class="pb-4 pr-4 font-black text-right w-40">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm">
+                            {trabajos.length > 0 ? (
+                                trabajos.map(item => (
+                                    <tr class="border-b border-white/5 hover:bg-white/[0.03] transition-colors group">
+                                        
+                                        <td class="py-5 pl-4">
+                                            <span class="bg-upla-primary/10 text-upla-accent px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-[0.2em] border border-upla-primary/20 whitespace-nowrap">
+                                                {item.unidad} • {item.semana}
+                                            </span>
+                                        </td>
+                                        
+                                        <td class="py-5 pr-4">
+                                            <p class="font-bold text-white line-clamp-1">{item.titulo}</p>
+                                        </td>
+                                        
+                                        <td class="py-5 pr-4">
+                                            <div class="flex items-center gap-2 text-gray-400 bg-[#050A18] px-3 py-1.5 rounded-lg border border-white/5 w-fit max-w-full">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-upla-accent shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+                                                <span class="text-[10px] font-bold truncate max-w-[150px]" title={item.archivos}>
+                                                    {item.archivos}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        
+                                        <td class="py-5 pr-4 whitespace-nowrap">
+                                            <span class="text-gray-400 text-[11px] font-bold tracking-widest">{item.fecha}</span>
+                                        </td>
+                                        
+                                        <td class="py-5 pr-4 text-right">
+                                            <div class="flex justify-end items-center gap-3">
+                                                
+                                                {/* Botón VER (Componente React) */}
+                                                <div class="scale-90 origin-right hover:scale-100 transition-transform">
+                                                    <DocumentViewer client:load urlsString={item.urlsOriginales} />
+                                                </div>
+
+                                                {/* Botón EDITAR */}
+                                                <button 
+                                                    class="btn-editar p-2.5 bg-blue-500/10 text-blue-400 rounded-lg hover:bg-blue-500 hover:text-white transition-all border border-blue-500/20 hover:shadow-[0_0_15px_rgba(59,130,246,0.5)]" 
+                                                    title="Editar" 
+                                                    data-item={JSON.stringify(item)}
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                                </button>
+
+                                                {/* Botón ELIMINAR */}
+                                                <button 
+                                                    class="btn-eliminar p-2.5 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500 hover:text-white transition-all border border-red-500/20 hover:shadow-[0_0_15px_rgba(239,68,68,0.5)]" 
+                                                    title="Eliminar" 
+                                                    data-id={item.id}
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colspan="5" class="py-16 text-center">
+                                        <div class="text-4xl mb-4 opacity-50">📁</div>
+                                        <p class="text-gray-500 text-sm font-bold tracking-widest uppercase">No hay trabajos registrados</p>
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    {/* Componente Formulario (Renderizado por Portal) */}
+    <TrabajoModal client:load />
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // 1. SOLUCIÓN: Evitar regresar al Dashboard si se usó el botón 'Atrás'
+            window.addEventListener('pageshow', (event) => {
+                // Si la página se carga desde el caché del navegador (bfcache)
+                if (event.persisted) {
+                    window.location.reload(); 
+                }
+            });
+
+            // 2. CERRAR SESIÓN
+            const btnLogout = document.getElementById('btn-logout');
+            if (btnLogout) {
+                btnLogout.addEventListener('click', async () => {
+                    // Si tienes un endpoint para matar cookies, puedes llamarlo aquí:
+                    // await fetch('/api/logout', { method: 'POST' });
+                    
+                    // location.replace elimina la ruta actual del historial, impidiendo retroceder
+                    window.location.replace('/');
+                });
+            }
+
+            // 3. SUBIR NUEVO TRABAJO (Abre el modal en modo 'crear')
+            const btnNuevo = document.getElementById('btn-nuevo-trabajo');
+            if (btnNuevo) {
+                btnNuevo.addEventListener('click', () => {
+                    window.dispatchEvent(new CustomEvent('open-trabajo-modal', { 
+                        detail: { mode: 'crear', data: null } 
+                    }));
+                });
+            }
+
+            // 4. EDITAR TRABAJO
+            document.querySelectorAll('.btn-editar').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const target = e.currentTarget as HTMLButtonElement; 
+                    const itemData = JSON.parse(target.getAttribute('data-item') || '{}');
+                    
+                    window.dispatchEvent(new CustomEvent('open-trabajo-modal', { 
+                        detail: { mode: 'editar', data: itemData } 
+                    }));
+                });
+            });
+
+            // 5. ELIMINAR TRABAJO CON ALERTA NATIVA
+            document.querySelectorAll('.btn-eliminar').forEach(btn => {
+                btn.addEventListener('click', async (e) => {
+                    const target = e.currentTarget as HTMLButtonElement;
+                    const id = target.getAttribute('data-id');
+                    
+                    // Alerta de confirmación antes de proceder
+                    if(confirm(`⚠️ ATENCIÓN: ¿Estás seguro de que deseas eliminar este trabajo?\nEsta acción no se puede deshacer.`)) {
+                        try {
+                            const res = await fetch(`/api/trabajos/eliminar/${id}`, {
+                                method: 'DELETE'
+                            });
+                            const data = await res.json();
+                            
+                            if(res.ok && data.success) {
+                                window.location.reload(); // Recarga la tabla para reflejar los cambios
+                            } else {
+                                alert(data.mensaje || "Error al eliminar el registro.");
+                            }
+                        } catch (error) {
+                            alert("Fallo de conexión con el servidor al intentar eliminar.");
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+
+    <style>
+        /* Estilos para el scrollbar de la tabla */
+        .custom-scroll::-webkit-scrollbar { height: 8px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #050A18; border-radius: 10px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #00B4D8; }
+    </style>
+</Layout>

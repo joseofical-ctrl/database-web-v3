@@ -1,0 +1,29 @@
+---
+interface Props {
+	title: string;
+}
+const { title } = Astro.props;
+---
+
+<!doctype html>
+<html lang="es">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width" />
+		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<title>{title}</title>
+	</head>
+	<body class="bg-[#050A18] text-upla-light antialiased min-h-screen flex flex-col">
+		<header class="border-b border-upla-primary/30 bg-upla-dark px-6 py-4 flex justify-between items-center">
+			<div class="flex items-center gap-2">
+				<span class="text-upla-accent font-bold text-xl">UPLA</span>
+				<span class="text-gray-400">| Admin BD II</span>
+			</div>
+			<a href="/" class="text-sm text-gray-400 hover:text-white transition-colors">← Volver al inicio</a>
+		</header>
+		
+		<main class="flex-grow flex items-center justify-center p-6">
+			<slot />
+		</main>
+	</body>
+</html>
