@@ -41,7 +41,6 @@ La arquitectura del proyecto sigue las convenciones de Astro, separando claramen
 │       ├── admin/          # Rutas protegidas (dashboard.astro)
 │       ├── api/            # Endpoints backend (login.ts, trabajos/...)
 │       └── index.astro     # Portafolio público principal
-├── .env                    # Variables de entorno (No subir al repo)
 ├── astro.config.mjs        # Configuración de Astro
 ├── tailwind.config.mjs     # Configuración del tema y colores
 └── package.json            # Dependencias y scripts
