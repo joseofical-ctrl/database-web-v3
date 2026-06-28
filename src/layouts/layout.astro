@@ -1,4 +1,6 @@
 ---
+import { ClientRouter } from 'astro:transitions';
+
 export interface Props {
     title: string;
     description?: string;
@@ -8,7 +10,7 @@ export interface Props {
 const { 
     title, 
     description = "Repositorio Académico - Base de Datos II. Gestión de entregas y estructura curricular de la UPLA.",
-    image = "/logo-ing.png" 
+    image = "/facultad.webp" 
 } = Astro.props;
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site || "https://database-web-v3.vercel.app");
@@ -23,6 +25,7 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site || "https://database
         <meta name="generator" content={Astro.generator} />
         
         <title>{title}</title>
+        <ClientRouter />
         <meta name="title" content={title} />
         <meta name="description" content={description} />
         <link rel="canonical" href={canonicalURL} />
@@ -42,19 +45,45 @@ const canonicalURL = new URL(Astro.url.pathname, Astro.site || "https://database
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@700;800;900&display=swap" rel="stylesheet">
+
+        <script is:inline>
+            if (localStorage.getItem('theme') === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        </script>
     </head>
-    <body class="bg-upla-dark text-upla-light antialiased overflow-x-hidden">
+    <body class="bg-gray-50 dark:bg-upla-dark text-gray-900 dark:text-upla-light antialiased overflow-x-hidden transition-colors duration-300 selection:bg-upla-accent selection:text-[#050A18]">
+        
         <slot />
+
+        <button id="global-theme-toggle" class="fixed bottom-6 right-6 z-[999] p-4 rounded-full bg-white dark:bg-[#0a142c] border border-gray-200 dark:border-white/10 text-gray-800 dark:text-white shadow-[0_8px_30px_rgb(0,0,0,0.12)] dark:shadow-[0_8px_30px_rgba(0,180,216,0.2)] hover:scale-110 transition-all duration-300 flex items-center justify-center group" title="Cambiar Tema">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="block dark:hidden text-upla-primary group-hover:text-upla-accent transition-colors"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden dark:block text-amber-400 group-hover:text-amber-300 transition-colors"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>
+        </button>
 
         <script>
             import Lenis from 'lenis';
             import { gsap } from 'gsap';
             import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
-            // Registramos ScrollTrigger
+            // --- Lógica del Tema Global ---
+            const themeToggleBtn = document.getElementById('global-theme-toggle');
+            if (themeToggleBtn) {
+                themeToggleBtn.addEventListener('click', () => {
+                    document.documentElement.classList.toggle('dark');
+                    if (document.documentElement.classList.contains('dark')) {
+                        localStorage.setItem('theme', 'dark');
+                    } else {
+                        localStorage.setItem('theme', 'light');
+                    }
+                });
+            }
+
+            // --- Lógica de Animaciones (Lenis + GSAP) ---
             gsap.registerPlugin(ScrollTrigger);
 
-            // Inicializamos Lenis
             const lenis = new Lenis({
                 duration: 1.2,
                 easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),

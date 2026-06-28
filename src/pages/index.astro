@@ -1,6 +1,6 @@
 ---
 import Layout from '../layouts/layout.astro';
-import { pool } from '../lib/db'; // Tu conexión a Railway
+import { pool } from '../lib/db'; 
 import DocumentViewer from '../components/Documentviewer';
 import LoginForm from '../components/admin/loginform';
 
@@ -15,21 +15,17 @@ const informacionEstudiante = {
   periodo: "2026-I"
 };
 
-// Obtener los trabajos reales desde Railway
 let trabajos: any[] = []; 
 try {
   const result = await pool.query('SELECT * FROM entregas');
   
-  // Transformamos y calculamos pesos de ordenamiento
   const transformados = result.rows.map(entrega => {
     const partes = entrega.unidad_semana ? entrega.unidad_semana.split(' • ') : ['Unidad ?', 'Semana ?'];
     const unidadTexto = partes[0] ? partes[0].trim().toUpperCase() : 'UNIDAD I';
     const semanaTexto = partes[1] ? partes[1].trim() : 'Semana 0';
     
-    // Extraer el número de semana para ordenar correctamente
     const numeroSemana = parseInt(semanaTexto.match(/\d+/)?.[0] || '0', 10);
     
-    // Asignar peso a la unidad para el orden jerárquico
     let pesoUnidad = 1;
     if (unidadTexto.includes('II')) pesoUnidad = 2;
     if (unidadTexto.includes('III')) pesoUnidad = 3;
@@ -39,6 +35,9 @@ try {
 
     const urls = entrega.nombre_archivo ? entrega.nombre_archivo.split(',') : [];
     const nombresCortos = urls.map((url: string) => url.split('/').pop()?.trim()).join(', ');
+    
+    // Nueva lógica para procesar los enlaces
+    const enlacesArray = entrega.enlaces ? entrega.enlaces.split(',').map((e: string) => e.trim()).filter((e: string) => e) : [];
 
     const fechaFormat = new Date(entrega.fecha_subida).toLocaleDateString('es-PE', {
       day: '2-digit', month: '2-digit', year: 'numeric'
@@ -52,11 +51,11 @@ try {
       archivos: nombresCortos || 'Sin archivos',
       peso: entrega.peso_mb ? `${entrega.peso_mb} MB` : '0 MB',
       urlsOriginales: entrega.nombre_archivo,
+      enlaces: enlacesArray,
       pesoOrden
     };
   });
 
-  // Ordenamos ascendentemente
   trabajos = transformados.sort((a, b) => a.pesoOrden - b.pesoOrden);
 
 } catch (error) {
@@ -66,71 +65,71 @@ try {
 
 <Layout title={`${informacionEstudiante.asignatura} | Portafolio`}>
     
-    <section class="relative h-screen w-full overflow-hidden flex items-center justify-center bg-[#050A18]">
+    <section class="relative h-screen w-full overflow-hidden flex items-center justify-center bg-gray-50 dark:bg-[#050A18] transition-colors duration-300">
         <div class="hero-bg-container absolute inset-0 z-0 h-[120%] -top-[10%]">
-            <img src="/facultad.webp" alt="UPLA" class="hero-bg-img w-full h-full object-cover opacity-60 brightness-[0.6] saturate-50 scale-110" />
-            <div class="absolute inset-0 bg-gradient-to-t from-[#050A18] via-[#050A18]/70 to-transparent"></div>
-            <div class="absolute inset-0 bg-[#0a1638]/40 mix-blend-multiply"></div>
+            <img src="/facultad.webp" alt="UPLA" class="hero-bg-img w-full h-full object-cover opacity-30 dark:opacity-60 brightness-[0.9] dark:brightness-[0.6] saturate-50 scale-110 transition-all duration-300" />
+            <div class="absolute inset-0 bg-gradient-to-t from-gray-50 via-gray-50/80 dark:from-[#050A18] dark:via-[#050A18]/70 to-transparent transition-colors duration-300"></div>
+            <div class="absolute inset-0 bg-white/20 dark:bg-[#0a1638]/40 mix-blend-multiply dark:mix-blend-multiply transition-colors duration-300"></div>
         </div>
 
-        <div class="absolute inset-0 z-10 opacity-[0.15] pointer-events-none bg-[linear-gradient(to_right,#3b82f6_1px,transparent_1px),linear-gradient(to_bottom,#3b82f6_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_70%_60%_at_50%_50%,#000_80%,transparent_100%)]"></div>
+        <div class="absolute inset-0 z-10 opacity-[0.05] dark:opacity-[0.15] pointer-events-none bg-[linear-gradient(to_right,#3b82f6_1px,transparent_1px),linear-gradient(to_bottom,#3b82f6_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_70%_60%_at_50%_50%,#000_80%,transparent_100%)] transition-opacity duration-300"></div>
 
         <div class="relative z-20 text-center flex flex-col items-center">
             <div class="overflow-hidden mb-4">
-                <h2 class="hero-subtitle text-upla-accent font-body font-bold tracking-[0.5em] md:tracking-[0.8em] text-xs md:text-sm translate-y-full uppercase opacity-0">
+                <h2 class="hero-subtitle text-upla-primary dark:text-upla-accent font-body font-bold tracking-[0.5em] md:tracking-[0.8em] text-xs md:text-sm translate-y-full uppercase opacity-0 transition-colors">
                     Universidad Peruana Los Andes
                 </h2>
             </div>
             <div class="overflow-hidden p-4">
-                <h1 class="hero-title text-6xl md:text-8xl lg:text-[10rem] font-heading text-white translate-y-full tracking-tighter drop-shadow-[0_10px_30px_rgba(0,0,0,0.8)] opacity-0">
-                    BASE DE DATOS <span class="text-transparent bg-clip-text bg-gradient-to-br from-upla-accent to-blue-600">II</span>
+                <h1 class="hero-title text-6xl md:text-8xl lg:text-[10rem] font-heading text-gray-900 dark:text-white translate-y-full tracking-tighter drop-shadow-[0_10px_30px_rgba(0,0,0,0.1)] dark:drop-shadow-[0_10px_30px_rgba(0,0,0,0.8)] opacity-0 transition-all">
+                    BASE DE DATOS <span class="text-transparent bg-clip-text bg-gradient-to-br from-blue-600 to-upla-primary dark:from-upla-accent dark:to-blue-600">II</span>
                 </h1>
             </div>
         </div>
 
         <div class="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 opacity-0 scroll-indicator group cursor-pointer z-20">
-            <div class="w-[24px] h-[38px] border-2 border-white/30 rounded-full flex justify-center p-1 group-hover:border-upla-accent transition-colors shadow-[0_0_15px_rgba(0,180,216,0.2)]">
-                <div class="w-1.5 h-2.5 bg-upla-accent rounded-full animate-bounce mt-1"></div>
+            <div class="w-[24px] h-[38px] border-2 border-gray-400/50 dark:border-white/30 rounded-full flex justify-center p-1 group-hover:border-upla-primary dark:group-hover:border-upla-accent transition-colors shadow-none dark:shadow-[0_0_15px_rgba(0,180,216,0.2)]">
+                <div class="w-1.5 h-2.5 bg-upla-primary dark:bg-upla-accent rounded-full animate-bounce mt-1 transition-colors"></div>
             </div>
-            <span class="text-[10px] tracking-[0.3em] font-bold text-white/60 uppercase group-hover:text-upla-accent transition-colors">Explorar</span>
+            <span class="text-[10px] tracking-[0.3em] font-bold text-gray-500 dark:text-white/60 uppercase group-hover:text-upla-primary dark:group-hover:text-upla-accent transition-colors">Explorar</span>
         </div>
     </section>
 
-    <section class="relative z-20 bg-[#050A18] pt-12 pb-20">
-        <div class="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-upla-primary/50 to-transparent"></div>
+    <section class="relative z-20 bg-gray-50 dark:bg-[#050A18] pt-12 pb-20 transition-colors duration-300">
+        <div class="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-gray-300 dark:via-upla-primary/50 to-transparent transition-colors"></div>
         
         <div class="max-w-7xl mx-auto px-6">
             
-            <div class="info-item opacity-0 translate-y-10 relative bg-gradient-to-br from-[#0a142c] to-[#050A18] border border-white/10 rounded-[2.5rem] p-8 md:p-12 mb-10 flex flex-col md:flex-row items-center gap-10 overflow-hidden group hover:border-upla-accent/40 transition-all duration-500 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
-                <div class="absolute -top-32 -left-32 w-96 h-96 bg-upla-accent/10 rounded-full blur-[120px] pointer-events-none group-hover:bg-upla-accent/20 transition-colors duration-700"></div>
+            <div class="info-item opacity-0 translate-y-10 relative bg-white dark:bg-gradient-to-br dark:from-[#0a142c] dark:to-[#050A18] border border-gray-200 dark:border-white/10 rounded-[2.5rem] p-8 md:p-12 mb-10 flex flex-col md:flex-row items-center gap-10 overflow-hidden group hover:border-upla-primary/40 dark:hover:border-upla-accent/40 transition-all duration-500 shadow-xl dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+                <div class="absolute -top-32 -left-32 w-96 h-96 bg-blue-100/50 dark:bg-upla-accent/10 rounded-full blur-[120px] pointer-events-none group-hover:bg-blue-200/50 dark:group-hover:bg-upla-accent/20 transition-colors duration-700"></div>
                 
                 <div class="relative z-10 shrink-0">
-                    <div class="w-40 h-40 md:w-48 md:h-48 rounded-3xl p-1.5 bg-gradient-to-tr from-upla-accent via-blue-500 to-upla-primary rotate-3 group-hover:rotate-0 transition-transform duration-500 shadow-2xl">
-                        <img src="/jose.png" alt="Jose Antonio Castro" class="w-full h-full object-cover rounded-[1.2rem] border-4 border-[#0a142c]" onerror="this.src='https://ui-avatars.com/api/?name=JA&background=0D1B2A&color=00B4D8&size=300'" />
+                    <div class="w-40 h-40 md:w-48 md:h-48 rounded-3xl p-1.5 bg-gradient-to-tr from-blue-400 via-blue-600 to-upla-primary dark:from-upla-accent dark:via-blue-500 dark:to-upla-primary rotate-3 group-hover:rotate-0 transition-transform duration-500 shadow-xl dark:shadow-2xl">
+                        <img src="/jose.png" alt="Jose Antonio Castro" class="w-full h-full object-cover rounded-[1.2rem] border-4 border-white dark:border-[#0a142c] transition-colors" onerror="this.src='https://ui-avatars.com/api/?name=JA&background=0D1B2A&color=00B4D8&size=300'" />
                     </div>
                 </div>
 
                 <div class="relative z-10 text-center md:text-left flex-1">
-                    <div class="inline-flex items-center gap-2 px-4 py-1.5 bg-upla-accent/10 border border-upla-accent/20 text-upla-accent text-[11px] font-black tracking-[0.3em] uppercase rounded-full mb-6">
-                        <span class="w-2 h-2 rounded-full bg-upla-accent animate-pulse"></span>
+                    <div class="inline-flex items-center gap-2 px-4 py-1.5 bg-blue-50 dark:bg-upla-accent/10 border border-blue-200 dark:border-upla-accent/20 text-blue-700 dark:text-upla-accent text-[11px] font-black tracking-[0.3em] uppercase rounded-full mb-6 transition-colors">
+                        <span class="w-2 h-2 rounded-full bg-blue-600 dark:bg-upla-accent animate-pulse transition-colors"></span>
                         Estudiante
                     </div>
-                    <h2 class="text-4xl md:text-5xl font-heading text-white tracking-tight mb-4 leading-tight">
-                        JOSE ANTONIO<br/><span class="text-transparent bg-clip-text bg-gradient-to-r from-upla-accent to-blue-400">CASTRO MAYTA</span>
+                    <h2 class="text-4xl md:text-5xl font-heading text-gray-900 dark:text-white tracking-tight mb-4 leading-tight transition-colors">
+                        JOSE ANTONIO<br/><span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-upla-primary dark:from-upla-accent dark:to-blue-400">CASTRO MAYTA</span>
                     </h2>
-                    <p class="text-gray-400 font-body text-base md:text-lg uppercase tracking-[0.1em] mb-2">
+                    <p class="text-gray-600 dark:text-gray-400 font-body text-base md:text-lg uppercase tracking-[0.1em] mb-2 transition-colors">
                         {informacionEstudiante.carrera}
                     </p>
                     <div class="flex items-center justify-center md:justify-start gap-4">
-                         <span class="text-upla-accent font-black text-sm tracking-widest">{informacionEstudiante.ciclo}</span>
-                         <span class="w-1 h-1 rounded-full bg-white/20"></span>
+                         <span class="text-blue-700 dark:text-upla-accent font-black text-sm tracking-widest transition-colors">{informacionEstudiante.ciclo}</span>
+                         <span class="w-1 h-1 rounded-full bg-gray-300 dark:bg-white/20 transition-colors"></span>
                          <span class="text-gray-500 text-xs font-bold uppercase tracking-widest">Huancayo, Perú</span>
                     </div>
                 </div>
 
-                <div class="relative z-10 hidden md:flex flex-col items-end justify-center text-right pl-12 ml-auto border-l border-white/10 md:w-[40%] shrink-0">
+                <div class="relative z-10 hidden md:flex flex-col items-end justify-center text-right pl-12 ml-auto border-l border-gray-200 dark:border-white/10 md:w-[40%] shrink-0 transition-colors">
                     
-                    <p class="text-gray-300 font-body text-base italic mb-8 max-w-[320px] leading-relaxed">
+                    <p class="text-gray-600 dark:text-gray-300 font-body text-base italic mb-8 max-w-[320px] leading-relaxed transition-colors">
                         "Transformando lógica en experiencias digitales escalables y eficientes."
                     </p>
                     
@@ -139,23 +138,23 @@ try {
                         <div class="flex gap-2.5 flex-wrap justify-end max-w-[350px]">
                             <span class="px-3 py-1 bg-[#E34F26]/10 border border-[#E34F26]/40 rounded-lg text-[11px] font-bold text-[#FF6D39] hover:bg-[#E34F26]/20 transition-all cursor-default">HTML5</span>
                             <span class="px-3 py-1 bg-[#1572B6]/10 border border-[#1572B6]/40 rounded-lg text-[11px] font-bold text-[#2995EE] hover:bg-[#1572B6]/20 transition-all cursor-default">CSS3</span>
-                            <span class="px-3 py-1 bg-[#F7DF1E]/10 border border-[#F7DF1E]/40 rounded-lg text-[11px] font-bold text-[#F7DF1E] hover:bg-[#F7DF1E]/20 transition-all cursor-default">JAVASCRIPT</span>
+                            <span class="px-3 py-1 bg-[#F7DF1E]/10 border border-[#F7DF1E]/40 rounded-lg text-[11px] font-bold text-[#b4a000] dark:text-[#F7DF1E] hover:bg-[#F7DF1E]/20 transition-all cursor-default">JAVASCRIPT</span>
                             
-                            <span class="px-3 py-1 bg-[#61DAFB]/10 border border-[#61DAFB]/40 rounded-lg text-[11px] font-bold text-[#61DAFB] hover:bg-[#61DAFB]/20 transition-all cursor-default">REACT</span>
+                            <span class="px-3 py-1 bg-[#61DAFB]/10 border border-[#61DAFB]/40 rounded-lg text-[11px] font-bold text-[#008db8] dark:text-[#61DAFB] hover:bg-[#61DAFB]/20 transition-all cursor-default">REACT</span>
                             <span class="px-3 py-1 bg-[#FF5D01]/10 border border-[#FF5D01]/40 rounded-lg text-[11px] font-bold text-[#FF5D01] hover:bg-[#FF5D01]/20 transition-all cursor-default">ASTRO</span>
-                            <span class="px-3 py-1 bg-[#339933]/10 border border-[#339933]/40 rounded-lg text-[11px] font-bold text-[#45cc45] hover:bg-[#339933]/20 transition-all cursor-default">NODE.JS</span>
+                            <span class="px-3 py-1 bg-[#339933]/10 border border-[#339933]/40 rounded-lg text-[11px] font-bold text-[#339933] dark:text-[#45cc45] hover:bg-[#339933]/20 transition-all cursor-default">NODE.JS</span>
                             <span class="px-3 py-1 bg-[#06B6D4]/10 border border-[#06B6D4]/40 rounded-lg text-[11px] font-bold text-[#06B6D4] hover:bg-[#06B6D4]/20 transition-all cursor-default">TAILWIND</span>
                         </div>
                     </div>
 
                     <div class="flex gap-4">
-                        <a href="https://github.com/joseofical-ctrl/database-web" target="_blank" class="w-12 h-12 flex items-center justify-center bg-white/5 border border-white/10 rounded-2xl hover:bg-white hover:text-black hover:-translate-y-1 transition-all duration-300 text-gray-400 shadow-xl" title="GitHub">
+                        <a href="https://github.com/joseofical-ctrl/database-web" target="_blank" class="w-12 h-12 flex items-center justify-center bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl hover:bg-gray-900 hover:text-white dark:hover:bg-white dark:hover:text-black hover:-translate-y-1 transition-all duration-300 text-gray-500 dark:text-gray-400 shadow-md dark:shadow-xl" title="GitHub">
                             <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
                         </a>
-                        <a href="https://www.linkedin.com/in/jose-undefined-7881132bb/" target="_blank" class="w-12 h-12 flex items-center justify-center bg-white/5 border border-white/10 rounded-2xl hover:bg-[#0077B5] hover:text-white hover:border-[#0077B5] hover:-translate-y-1 transition-all duration-300 text-gray-400 shadow-xl" title="LinkedIn">
+                        <a href="https://www.linkedin.com/in/jose-undefined-7881132bb/" target="_blank" class="w-12 h-12 flex items-center justify-center bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl hover:bg-[#0077B5] hover:text-white hover:border-[#0077B5] hover:-translate-y-1 transition-all duration-300 text-gray-500 dark:text-gray-400 shadow-md dark:shadow-xl" title="LinkedIn">
                             <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg>
                         </a>
-                        <a href="mailto:t01269h@ms.upla.edu.pe" class="w-12 h-12 flex items-center justify-center bg-white/5 border border-white/10 rounded-2xl hover:bg-upla-accent hover:text-[#0a142c] hover:border-upla-accent hover:-translate-y-1 transition-all duration-300 text-gray-400 shadow-xl" title="Enviar Correo">
+                        <a href="mailto:t01269h@ms.upla.edu.pe" class="w-12 h-12 flex items-center justify-center bg-gray-100 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl hover:bg-blue-600 hover:text-white dark:hover:bg-upla-accent dark:hover:text-[#0a142c] hover:border-blue-600 dark:hover:border-upla-accent hover:-translate-y-1 transition-all duration-300 text-gray-500 dark:text-gray-400 shadow-md dark:shadow-xl" title="Enviar Correo">
                             <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
                         </a>
                     </div>
@@ -164,31 +163,31 @@ try {
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 
-                <div class="info-item opacity-0 translate-y-10 bg-[#0a142c] border border-white/5 p-8 rounded-[2rem] hover:border-upla-primary/40 transition-all duration-300 flex flex-col justify-center shadow-lg">
+                <div class="info-item opacity-0 translate-y-10 bg-white dark:bg-[#0a142c] border border-gray-200 dark:border-white/5 p-8 rounded-[2rem] hover:border-blue-400 dark:hover:border-upla-primary/40 transition-all duration-300 flex flex-col justify-center shadow-lg">
                     <div class="flex items-center gap-5 mb-5">
-                        <div class="w-14 h-14 rounded-2xl bg-upla-primary/10 flex items-center justify-center text-3xl border border-upla-primary/20 shrink-0">
+                        <div class="w-14 h-14 rounded-2xl bg-blue-50 dark:bg-upla-primary/10 flex items-center justify-center text-3xl border border-blue-100 dark:border-upla-primary/20 shrink-0 transition-colors">
                             🗄️
                         </div>
                         <div>
-                            <h4 class="text-upla-accent text-[11px] font-black tracking-[0.3em] uppercase mb-1.5">Asignatura</h4>
-                            <p class="text-white text-xl font-bold leading-tight">{informacionEstudiante.asignatura}</p>
+                            <h4 class="text-blue-600 dark:text-upla-accent text-[11px] font-black tracking-[0.3em] uppercase mb-1.5 transition-colors">Asignatura</h4>
+                            <p class="text-gray-900 dark:text-white text-xl font-bold leading-tight transition-colors">{informacionEstudiante.asignatura}</p>
                         </div>
                     </div>
-                    <div class="pt-5 border-t border-white/5 flex justify-between items-center text-[11px] text-gray-500 font-black uppercase tracking-[0.2em]">
+                    <div class="pt-5 border-t border-gray-100 dark:border-white/5 flex justify-between items-center text-[11px] text-gray-500 font-black uppercase tracking-[0.2em] transition-colors">
                         <span>CÓD: {informacionEstudiante.codigoAsignatura}</span>
                         <span>{informacionEstudiante.periodo}</span>
                     </div>
                 </div>
 
-                <div class="info-item opacity-0 translate-y-10 bg-[#0a142c] border border-white/5 p-8 rounded-[2rem] hover:border-upla-primary/40 transition-all duration-300 flex flex-col justify-center shadow-lg">
+                <div class="info-item opacity-0 translate-y-10 bg-white dark:bg-[#0a142c] border border-gray-200 dark:border-white/5 p-8 rounded-[2rem] hover:border-blue-400 dark:hover:border-upla-primary/40 transition-all duration-300 flex flex-col justify-center shadow-lg">
                     <div class="flex items-center gap-5 mb-5">
-                        <img src="/Bejarano.webp" alt="Docente" class="w-14 h-14 rounded-2xl object-cover border border-white/10 shrink-0 shadow-md" onerror="this.src='https://ui-avatars.com/api/?name=Raul+Fernandez&background=1f2937&color=fff&size=120'" />
+                        <img src="/Bejarano.webp" alt="Docente" class="w-14 h-14 rounded-2xl object-cover border border-gray-200 dark:border-white/10 shrink-0 shadow-sm dark:shadow-md transition-colors" onerror="this.src='https://ui-avatars.com/api/?name=Raul+Fernandez&background=1f2937&color=fff&size=120'" />
                         <div>
-                            <h4 class="text-upla-accent text-[11px] font-black tracking-[0.3em] uppercase mb-1.5">Catedrático</h4>
-                            <p class="text-white text-base lg:text-lg font-bold leading-tight">{informacionEstudiante.docente}</p>
+                            <h4 class="text-blue-600 dark:text-upla-accent text-[11px] font-black tracking-[0.3em] uppercase mb-1.5 transition-colors">Catedrático</h4>
+                            <p class="text-gray-900 dark:text-white text-base lg:text-lg font-bold leading-tight transition-colors">{informacionEstudiante.docente}</p>
                         </div>
                     </div>
-                    <div class="pt-5 border-t border-white/5 flex items-center text-[11px] text-gray-500 font-black uppercase tracking-[0.2em]">
+                    <div class="pt-5 border-t border-gray-100 dark:border-white/5 flex items-center text-[11px] text-gray-500 font-black uppercase tracking-[0.2em] transition-colors">
                         <span class="flex items-center gap-2">
                             <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                             Encargado del Curso
@@ -196,20 +195,20 @@ try {
                     </div>
                 </div>
 
-                <div class="info-item opacity-0 translate-y-10 bg-[#0a142c] border border-white/5 p-8 rounded-[2rem] hover:border-upla-primary/40 transition-all duration-300 flex flex-col justify-center relative overflow-hidden group shadow-lg">
-                    <div class="absolute -right-6 -bottom-6 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-700 pointer-events-none">
+                <div class="info-item opacity-0 translate-y-10 bg-white dark:bg-[#0a142c] border border-gray-200 dark:border-white/5 p-8 rounded-[2rem] hover:border-blue-400 dark:hover:border-upla-primary/40 transition-all duration-300 flex flex-col justify-center relative overflow-hidden group shadow-lg">
+                    <div class="absolute -right-6 -bottom-6 opacity-[0.03] dark:opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-700 pointer-events-none">
                         <img src="/logo-ingenieria.webp" class="w-40 h-40 object-contain rotate-12" />
                     </div>
                     <div class="flex items-center gap-5 mb-5 relative z-10">
-                        <div class="w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center p-3 border border-white/10 shrink-0 shadow-md">
+                        <div class="w-14 h-14 rounded-2xl bg-gray-50 dark:bg-white/5 flex items-center justify-center p-3 border border-gray-200 dark:border-white/10 shrink-0 shadow-sm dark:shadow-md transition-colors">
                             <img src="/logo-ing.png" alt="Logo Facultad" class="w-full h-full object-contain" onerror="this.src='https://ui-avatars.com/api/?name=FI&background=0D1B2A&color=00B4D8'" />
                         </div>
                         <div>
-                            <h4 class="text-upla-accent text-[11px] font-black tracking-[0.3em] uppercase mb-1.5">Facultad</h4>
-                            <p class="text-white text-xl font-bold leading-tight">Ingeniería</p>
+                            <h4 class="text-blue-600 dark:text-upla-accent text-[11px] font-black tracking-[0.3em] uppercase mb-1.5 transition-colors">Facultad</h4>
+                            <p class="text-gray-900 dark:text-white text-xl font-bold leading-tight transition-colors">Ingeniería</p>
                         </div>
                     </div>
-                    <div class="pt-5 border-t border-white/5 flex items-center text-[11px] text-gray-500 font-black uppercase tracking-[0.2em] relative z-10">
+                    <div class="pt-5 border-t border-gray-100 dark:border-white/5 flex items-center text-[11px] text-gray-500 font-black uppercase tracking-[0.2em] relative z-10 transition-colors">
                         <span>Universidad Peruana Los Andes</span>
                     </div>
                 </div>
@@ -218,21 +217,21 @@ try {
         </div>
     </section>
 
-    <section id="repositorio" class="relative z-20 max-w-7xl mx-auto px-6 py-24 bg-[#050A18]">
-        <div class="flex flex-col md:flex-row md:items-end justify-between mb-14 border-b border-white/5 pb-10 gap-8">
+    <section id="repositorio" class="relative z-20 max-w-7xl mx-auto px-6 py-24 bg-gray-50 dark:bg-[#050A18] transition-colors duration-300">
+        <div class="flex flex-col md:flex-row md:items-end justify-between mb-14 border-b border-gray-200 dark:border-white/5 pb-10 gap-8 transition-colors">
             <div class="overflow-hidden">
                 <div class="flex items-center gap-5 mb-5">
-                    <h3 class="text-5xl md:text-6xl font-heading tracking-tighter text-white section-title translate-y-full uppercase">Repositorio</h3>
-                    <div class="hidden md:block h-1 w-16 bg-upla-accent rounded-full opacity-0 section-subtitle"></div>
+                    <h3 class="text-5xl md:text-6xl font-heading tracking-tighter text-gray-900 dark:text-white section-title translate-y-full uppercase transition-colors">Repositorio</h3>
+                    <div class="hidden md:block h-1 w-16 bg-blue-600 dark:bg-upla-accent rounded-full opacity-0 section-subtitle transition-colors"></div>
                 </div>
-                <p class="text-gray-400 font-body section-subtitle opacity-0 text-base tracking-wide">Gestión de entregas y estructura curricular sincronizada en tiempo real.</p>
+                <p class="text-gray-500 dark:text-gray-400 font-body section-subtitle opacity-0 text-base tracking-wide transition-colors">Gestión de entregas y estructura curricular sincronizada en tiempo real.</p>
             </div>
             
-            <button id="btn-abrir-login" class="btn-admin group relative overflow-hidden px-10 py-4 bg-[#0a142c] border border-upla-primary/30 text-white font-black tracking-[0.2em] text-[11px] transition-all rounded-2xl section-title translate-y-full hover:border-upla-accent shadow-2xl hover:shadow-upla-accent/20">
-                <span class="relative z-10 group-hover:text-[#050A18] transition-colors duration-300 flex items-center gap-3 uppercase">
+            <button id="btn-abrir-login" class="btn-admin group relative overflow-hidden px-10 py-4 bg-white dark:bg-[#0a142c] border border-gray-300 dark:border-upla-primary/30 text-gray-800 dark:text-white font-black tracking-[0.2em] text-[11px] transition-all rounded-2xl section-title translate-y-full hover:border-blue-500 dark:hover:border-upla-accent shadow-lg dark:shadow-2xl hover:shadow-blue-500/20 dark:hover:shadow-upla-accent/20">
+                <span class="relative z-10 group-hover:text-white dark:group-hover:text-[#050A18] transition-colors duration-300 flex items-center gap-3 uppercase">
                     Acceso Estudiante <span class="text-xl group-hover:translate-x-1 transition-transform">→</span>
                 </span>
-                <div class="absolute inset-0 bg-upla-accent transform scale-x-0 origin-left group-hover:scale-x-100 transition-transform duration-300 ease-out z-0"></div>
+                <div class="absolute inset-0 bg-blue-600 dark:bg-upla-accent transform scale-x-0 origin-left group-hover:scale-x-100 transition-transform duration-300 ease-out z-0"></div>
             </button>
         </div>
 
@@ -240,7 +239,7 @@ try {
             {['TODOS', 'UNIDAD I', 'UNIDAD II', 'UNIDAD III', 'UNIDAD IV'].map((un) => (
                 <button 
                     data-filter={un === 'TODOS' ? 'all' : un}
-                    class="filter-btn px-8 py-3.5 text-[11px] font-black tracking-[0.3em] border border-white/5 text-gray-500 hover:border-upla-accent hover:text-white transition-all rounded-2xl uppercase bg-[#0a142c] hover:bg-upla-primary/10 whitespace-nowrap shrink-0"
+                    class="filter-btn px-8 py-3.5 text-[11px] font-black tracking-[0.3em] border border-gray-200 dark:border-white/5 text-gray-500 hover:border-blue-500 dark:hover:border-upla-accent hover:text-blue-600 dark:hover:text-white transition-all rounded-2xl uppercase bg-white dark:bg-[#0a142c] hover:bg-blue-50 dark:hover:bg-upla-primary/10 whitespace-nowrap shrink-0 shadow-sm dark:shadow-none"
                 >
                     {un}
                 </button>
@@ -252,24 +251,24 @@ try {
                 trabajos.map((item) => (
                     <article 
                         data-unidad={item.unidad} 
-                        class="project-card opacity-0 group relative bg-[#0a142c] rounded-[2.5rem] border border-white/5 flex flex-col h-auto min-h-[340px] transition-all duration-500 hover:-translate-y-3 hover:border-upla-accent/50 hover:shadow-[0_30px_60px_-20px_rgba(0,180,216,0.2)] overflow-hidden"
+                        class="project-card opacity-0 group relative bg-white dark:bg-[#0a142c] rounded-[2.5rem] border border-gray-200 dark:border-white/5 flex flex-col h-auto min-h-[340px] transition-all duration-500 hover:-translate-y-3 hover:border-blue-400 dark:hover:border-upla-accent/50 shadow-md dark:shadow-none hover:shadow-[0_30px_60px_-20px_rgba(59,130,246,0.2)] dark:hover:shadow-[0_30px_60px_-20px_rgba(0,180,216,0.2)] overflow-hidden"
                     >
-                        <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-transparent via-upla-primary/40 to-transparent group-hover:via-upla-accent transition-colors duration-500"></div>
+                        <div class="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-transparent via-blue-200 dark:via-upla-primary/40 to-transparent group-hover:via-blue-500 dark:group-hover:via-upla-accent transition-colors duration-500"></div>
                         
                         <div class="p-8 md:p-10 flex flex-col flex-grow relative z-10">
                             
                             <div class="flex justify-between items-center mb-6">
-                                <span class="text-upla-accent text-xs font-black tracking-[0.2em] uppercase">
+                                <span class="text-blue-600 dark:text-upla-accent text-xs font-black tracking-[0.2em] uppercase transition-colors">
                                     {item.unidad} • {item.semana}
                                 </span>
-                                <span class="text-[9px] font-black tracking-widest text-emerald-400 bg-emerald-400/10 px-3 py-1.5 rounded-lg uppercase flex items-center gap-1.5 border border-emerald-400/20">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                <span class="text-[9px] font-black tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-400/10 px-3 py-1.5 rounded-lg uppercase flex items-center gap-1.5 border border-emerald-200 dark:border-emerald-400/20 transition-colors">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse transition-colors"></span>
                                     Registrado
                                 </span>
                             </div>
 
                             <div class="flex-grow flex flex-col mb-6">
-                                <h4 class="text-2xl md:text-3xl font-bold text-white mb-4 line-clamp-2 group-hover:text-upla-accent transition-colors duration-300 leading-tight">
+                                <h4 class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-4 line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-upla-accent transition-colors duration-300 leading-tight">
                                     {item.titulo}
                                 </h4>
                                 
@@ -279,20 +278,34 @@ try {
                                 </div>
 
                                 <div class="flex flex-col gap-2 mt-auto">
-                                    <span class="text-[9px] text-gray-500 uppercase tracking-widest font-bold">Archivos adjuntos:</span>
-                                    <div class="flex items-start gap-2.5 text-gray-300 bg-white/5 p-3.5 rounded-xl border border-white/5 group-hover:bg-white/10 transition-colors">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mt-0.5 text-upla-accent shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+                                    <span class="text-[9px] text-gray-400 dark:text-gray-500 uppercase tracking-widest font-bold transition-colors">Archivos adjuntos:</span>
+                                    <div class="flex items-start gap-2.5 text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-white/5 p-3.5 rounded-xl border border-gray-100 dark:border-white/5 group-hover:bg-blue-50 dark:group-hover:bg-white/10 transition-colors">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mt-0.5 text-blue-500 dark:text-upla-accent shrink-0 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
                                         <p class="text-xs font-body line-clamp-2 leading-relaxed" title={item.archivos}>
                                             {item.archivos}
                                         </p>
                                     </div>
+
+                                    {item.enlaces.length > 0 && (
+                                        <>
+                                            <span class="text-[9px] text-gray-400 dark:text-gray-500 uppercase tracking-widest font-bold transition-colors mt-2">Enlaces web:</span>
+                                            <div class="flex flex-wrap gap-2">
+                                                {item.enlaces.map((link: string) => (
+                                                    <a href={link} target="_blank" rel="noopener noreferrer" class="flex items-center gap-1.5 text-xs text-blue-600 dark:text-upla-accent bg-blue-50 dark:bg-upla-accent/10 px-3 py-2 rounded-lg border border-blue-100 dark:border-upla-accent/20 hover:bg-blue-100 dark:hover:bg-upla-accent/20 transition-colors truncate max-w-full" title={link}>
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                                                        <span class="truncate font-bold">{link.replace(/^https?:\/\//, '')}</span>
+                                                    </a>
+                                                ))}
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                             
-                            <div class="mt-auto border-t border-white/5 pt-8">
+                            <div class="mt-auto border-t border-gray-100 dark:border-white/5 pt-8 transition-colors">
                                 <div class="flex items-center justify-between">
-                                    <div class="flex items-center gap-3 text-xs text-gray-400 font-black uppercase tracking-widest bg-[#050A18] px-3.5 py-2 rounded-lg border border-white/5 group-hover:border-white/10 transition-colors">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-upla-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" /></svg>
+                                    <div class="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 font-black uppercase tracking-widest bg-gray-50 dark:bg-[#050A18] px-3.5 py-2 rounded-lg border border-gray-200 dark:border-white/5 group-hover:border-blue-200 dark:group-hover:border-white/10 transition-colors">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-blue-500 dark:text-upla-accent transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" /></svg>
                                         {item.peso}
                                     </div>
                                     
@@ -304,7 +317,7 @@ try {
                 ))
             ) : (
                 <div class="col-span-full py-24 text-center flex flex-col items-center">
-                    <div class="w-24 h-24 bg-white/5 rounded-full flex items-center justify-center text-5xl mb-6 grayscale opacity-30">📂</div>
+                    <div class="w-24 h-24 bg-gray-100 dark:bg-white/5 rounded-full flex items-center justify-center text-5xl mb-6 grayscale opacity-50 dark:opacity-30 transition-colors">📂</div>
                     <p class="text-gray-500 font-body text-xl font-medium tracking-wide">Base de datos vacía. No hay registros.</p>
                 </div>
             )}
@@ -316,35 +329,63 @@ try {
     <script>
         import { gsap } from 'gsap';
         import { ScrollTrigger } from 'gsap/ScrollTrigger';
-        gsap.registerPlugin(ScrollTrigger);
+        
+        function initAnimations() {
+            gsap.registerPlugin(ScrollTrigger);
+            
+            ScrollTrigger.getAll().forEach(trigger => trigger.kill());
 
-        document.addEventListener('DOMContentLoaded', () => {
             const tl = gsap.timeline();
             
-            tl.to('.hero-bg-img', { scale: 1, duration: 4, ease: 'power2.out' })
-              .to('.hero-subtitle', { y: 0, opacity: 1, duration: 1.5, ease: 'power4.out' }, '-=3.5')
-              .to('.hero-title', { y: 0, opacity: 1, duration: 2, ease: 'expo.out' }, '-=2.8')
-              .to('.scroll-indicator', { opacity: 1, y: -5, duration: 1, ease: 'power2.out' }, '-=1.2');
+            if(document.querySelector('.hero-bg-img')) {
+                tl.to('.hero-bg-img', { scale: 1, duration: 4, ease: 'power2.out' })
+                  .to('.hero-subtitle', { y: 0, opacity: 1, duration: 1.5, ease: 'power4.out' }, '-=3.5')
+                  .to('.hero-title', { y: 0, opacity: 1, duration: 2, ease: 'expo.out' }, '-=2.8')
+                  .to('.scroll-indicator', { opacity: 1, y: -5, duration: 1, ease: 'power2.out' }, '-=1.2');
 
-            gsap.to('.hero-bg-container', { scrollTrigger: { trigger: 'body', start: 'top top', end: 'bottom top', scrub: true }, yPercent: 20, ease: 'none' });
-            gsap.to('.info-item', { scrollTrigger: { trigger: '.info-item', start: 'top 90%' }, opacity: 1, y: 0, duration: 1, stagger: 0.15, ease: 'power3.out' });
-            gsap.to('.section-title', { scrollTrigger: { trigger: '.section-title', start: 'top 95%' }, y: 0, duration: 1.2, ease: 'power4.out', stagger: 0.2 });
-            gsap.to('.section-subtitle', { scrollTrigger: { trigger: '.section-title', start: 'top 95%' }, opacity: 1, duration: 1.5, delay: 0.3, ease: 'power2.out' });
+                gsap.to('.hero-bg-container', { scrollTrigger: { trigger: 'body', start: 'top top', end: 'bottom top', scrub: true }, yPercent: 20, ease: 'none' });
+            }
+
+            if(document.querySelector('.info-item')) {
+                gsap.to('.info-item', { scrollTrigger: { trigger: '.info-item', start: 'top 90%' }, opacity: 1, y: 0, duration: 1, stagger: 0.15, ease: 'power3.out' });
+            }
+
+            if(document.querySelector('.section-title')) {
+                gsap.to('.section-title', { scrollTrigger: { trigger: '.section-title', start: 'top 95%' }, y: 0, duration: 1.2, ease: 'power4.out', stagger: 0.2 });
+                gsap.to('.section-subtitle', { scrollTrigger: { trigger: '.section-title', start: 'top 95%' }, opacity: 1, duration: 1.5, delay: 0.3, ease: 'power2.out' });
+            }
             
-            gsap.fromTo('.project-card', 
-                { opacity: 0, y: 80, scale: 0.95 }, 
-                { scrollTrigger: { trigger: '#repositorio', start: 'top 75%' }, opacity: 1, y: 0, scale: 1, duration: 1.2, stagger: 0.1, ease: 'power3.out' }
-            );
+            if(document.querySelector('.project-card')) {
+                gsap.fromTo('.project-card', 
+                    { opacity: 0, y: 80, scale: 0.95 }, 
+                    { scrollTrigger: { trigger: '#repositorio', start: 'top 75%' }, opacity: 1, y: 0, scale: 1, duration: 1.2, stagger: 0.1, ease: 'power3.out' }
+                );
+            }
 
             const filterBtns = document.querySelectorAll('.filter-btn');
             const cards = document.querySelectorAll('.project-card');
 
-            if(filterBtns[0]) filterBtns[0].classList.add('border-upla-accent', 'text-white', 'bg-upla-primary/20');
+            const setActiveFilterClass = (btn: Element) => {
+                const isDark = document.documentElement.classList.contains('dark');
+                if (isDark) {
+                    btn.classList.add('border-upla-accent', 'text-white', 'bg-upla-primary/20');
+                    btn.classList.remove('border-blue-500', 'text-blue-700', 'bg-blue-50');
+                } else {
+                    btn.classList.add('border-blue-500', 'text-blue-700', 'bg-blue-50');
+                    btn.classList.remove('border-upla-accent', 'text-white', 'bg-upla-primary/20');
+                }
+            };
+
+            const removeActiveFilterClass = (btn: Element) => {
+                btn.classList.remove('border-upla-accent', 'text-white', 'bg-upla-primary/20', 'border-blue-500', 'text-blue-700', 'bg-blue-50');
+            };
+
+            if(filterBtns[0]) setActiveFilterClass(filterBtns[0]);
 
             filterBtns.forEach(btn => {
                 btn.addEventListener('click', () => {
-                    filterBtns.forEach(b => b.classList.remove('border-upla-accent', 'text-white', 'bg-upla-primary/20'));
-                    btn.classList.add('border-upla-accent', 'text-white', 'bg-upla-primary/20');
+                    filterBtns.forEach(b => removeActiveFilterClass(b));
+                    setActiveFilterClass(btn);
                     const filterValue = btn.getAttribute('data-filter');
 
                     gsap.to(cards, {
@@ -365,14 +406,46 @@ try {
                 });
             });
 
-            // Lógica para abrir el Modal de Login
             const btnLogin = document.getElementById('btn-abrir-login');
-            if (btnLogin) {
-                btnLogin.addEventListener('click', (e) => {
+            const newBtnLogin = btnLogin?.cloneNode(true);
+            if(btnLogin && newBtnLogin && btnLogin.parentNode) {
+                btnLogin.parentNode.replaceChild(newBtnLogin, btnLogin);
+                newBtnLogin.addEventListener('click', (e) => {
                     e.preventDefault();
                     window.dispatchEvent(new Event('open-login-modal'));
                 });
             }
+        }
+
+        document.addEventListener('astro:page-load', () => {
+            initAnimations();
+            
+            const activeBtn = document.querySelector('.filter-btn[data-filter].bg-blue-50, .filter-btn[data-filter].bg-upla-primary\\/20');
+            if (activeBtn) {
+                const isDark = document.documentElement.classList.contains('dark');
+                if (isDark) {
+                    activeBtn.classList.add('border-upla-accent', 'text-white', 'bg-upla-primary/20');
+                    activeBtn.classList.remove('border-blue-500', 'text-blue-700', 'bg-blue-50');
+                } else {
+                    activeBtn.classList.add('border-blue-500', 'text-blue-700', 'bg-blue-50');
+                    activeBtn.classList.remove('border-upla-accent', 'text-white', 'bg-upla-primary/20');
+                }
+            }
         });
+        
+        const observer = new MutationObserver(() => {
+            const activeBtn = document.querySelector('.filter-btn[data-filter].bg-blue-50, .filter-btn[data-filter].bg-upla-primary\\/20');
+            if (activeBtn) {
+                const isDark = document.documentElement.classList.contains('dark');
+                if (isDark) {
+                    activeBtn.classList.add('border-upla-accent', 'text-white', 'bg-upla-primary/20');
+                    activeBtn.classList.remove('border-blue-500', 'text-blue-700', 'bg-blue-50');
+                } else {
+                    activeBtn.classList.add('border-blue-500', 'text-blue-700', 'bg-blue-50');
+                    activeBtn.classList.remove('border-upla-accent', 'text-white', 'bg-upla-primary/20');
+                }
+            }
+        });
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
     </script>
 </Layout>

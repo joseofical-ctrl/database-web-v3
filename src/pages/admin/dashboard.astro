@@ -3,6 +3,7 @@ import Layout from '../../layouts/layout.astro';
 import { pool } from '../../lib/db';
 import DocumentViewer from '../../components/Documentviewer';
 import TrabajoModal from '../../components/admin/Trabajos'; 
+import Analytics from '../../components/Analytics';
 
 let trabajos: any[] = []; 
 let totalTrabajos = 0;
@@ -26,6 +27,9 @@ try {
     const urls = entrega.nombre_archivo ? entrega.nombre_archivo.split(',') : [];
     const nombresCortos = urls.map((url: string) => url.split('/').pop()?.trim()).join(', ');
     
+    // Nueva lógica para enlaces
+    const enlacesArray = entrega.enlaces ? entrega.enlaces.split(',').map((e: string) => e.trim()).filter((e: string) => e) : [];
+    
     const fechaFormat = new Date(entrega.fecha_subida).toLocaleDateString('es-PE', {
       day: '2-digit', month: '2-digit', year: 'numeric'
     });
@@ -39,6 +43,7 @@ try {
       archivos: nombresCortos || 'Sin archivos',
       peso: entrega.peso_mb ? `${entrega.peso_mb} MB` : '0 MB',
       urlsOriginales: entrega.nombre_archivo,
+      enlaces: enlacesArray,
       pesoOrden
     };
   });
@@ -52,7 +57,7 @@ try {
 
 <Layout title="Dashboard Admin | Base de Datos II">
     <section class="min-h-screen bg-[#050A18] pt-24 pb-20 px-6">
-        
+        <Analytics trabajos={trabajos} />
         {/* Efecto de luz de fondo */}
         <div class="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-64 bg-upla-accent/5 blur-[120px] pointer-events-none"></div>
 
@@ -71,7 +76,6 @@ try {
                 </div>
                 
                 <div class="flex gap-4">
-                    {/* Botón de Volver al Inicio Eliminado. Única salida: Cerrar Sesión */}
                     <button id="btn-logout" class="px-8 py-4 bg-red-500/10 border border-red-500/30 text-red-400 rounded-2xl hover:bg-red-500 hover:text-white transition-all text-[10px] font-black uppercase tracking-[0.2em] shadow-lg">
                         Cerrar Sesión
                     </button>
@@ -121,7 +125,7 @@ try {
                             <tr class="text-[10px] text-gray-500 uppercase tracking-[0.2em] border-b border-white/10">
                                 <th class="pb-4 pl-4 font-black w-48">Unidad / Sem</th>
                                 <th class="pb-4 font-black">Título del Trabajo</th>
-                                <th class="pb-4 font-black w-48">Archivos</th>
+                                <th class="pb-4 font-black w-48">Archivos y Enlaces</th>
                                 <th class="pb-4 font-black w-32">Fecha</th>
                                 <th class="pb-4 pr-4 font-black text-right w-40">Acciones</th>
                             </tr>
@@ -142,11 +146,22 @@ try {
                                         </td>
                                         
                                         <td class="py-5 pr-4">
-                                            <div class="flex items-center gap-2 text-gray-400 bg-[#050A18] px-3 py-1.5 rounded-lg border border-white/5 w-fit max-w-full">
-                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-upla-accent shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
-                                                <span class="text-[10px] font-bold truncate max-w-[150px]" title={item.archivos}>
-                                                    {item.archivos}
-                                                </span>
+                                            <div class="flex flex-col gap-2">
+                                                <div class="flex items-center gap-2 text-gray-400 bg-[#050A18] px-3 py-1.5 rounded-lg border border-white/5 w-fit max-w-full">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 text-upla-accent shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
+                                                    <span class="text-[10px] font-bold truncate max-w-[150px]" title={item.archivos}>
+                                                        {item.archivos}
+                                                    </span>
+                                                </div>
+                                                {item.enlaces.length > 0 && (
+                                                    <div class="flex flex-wrap gap-1.5">
+                                                        {item.enlaces.map((link: string) => (
+                                                            <a href={link} target="_blank" rel="noopener noreferrer" class="flex items-center gap-1 text-[9px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-1 rounded hover:bg-blue-500/20 transition-colors" title={link}>
+                                                                🔗 Link
+                                                            </a>
+                                                        ))}
+                                                    </div>
+                                                )}
                                             </div>
                                         </td>
                                         
@@ -198,33 +213,25 @@ try {
         </div>
     </section>
 
-    {/* Componente Formulario (Renderizado por Portal) */}
+    {/* Componente Formulario */}
     <TrabajoModal client:load />
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             
-            // 1. SOLUCIÓN: Evitar regresar al Dashboard si se usó el botón 'Atrás'
             window.addEventListener('pageshow', (event) => {
-                // Si la página se carga desde el caché del navegador (bfcache)
                 if (event.persisted) {
                     window.location.reload(); 
                 }
             });
 
-            // 2. CERRAR SESIÓN
             const btnLogout = document.getElementById('btn-logout');
             if (btnLogout) {
                 btnLogout.addEventListener('click', async () => {
-                    // Si tienes un endpoint para matar cookies, puedes llamarlo aquí:
-                    // await fetch('/api/logout', { method: 'POST' });
-                    
-                    // location.replace elimina la ruta actual del historial, impidiendo retroceder
                     window.location.replace('/');
                 });
             }
 
-            // 3. SUBIR NUEVO TRABAJO (Abre el modal en modo 'crear')
             const btnNuevo = document.getElementById('btn-nuevo-trabajo');
             if (btnNuevo) {
                 btnNuevo.addEventListener('click', () => {
@@ -234,7 +241,6 @@ try {
                 });
             }
 
-            // 4. EDITAR TRABAJO
             document.querySelectorAll('.btn-editar').forEach(btn => {
                 btn.addEventListener('click', (e) => {
                     const target = e.currentTarget as HTMLButtonElement; 
@@ -246,13 +252,11 @@ try {
                 });
             });
 
-            // 5. ELIMINAR TRABAJO CON ALERTA NATIVA
             document.querySelectorAll('.btn-eliminar').forEach(btn => {
                 btn.addEventListener('click', async (e) => {
                     const target = e.currentTarget as HTMLButtonElement;
                     const id = target.getAttribute('data-id');
                     
-                    // Alerta de confirmación antes de proceder
                     if(confirm(`⚠️ ATENCIÓN: ¿Estás seguro de que deseas eliminar este trabajo?\nEsta acción no se puede deshacer.`)) {
                         try {
                             const res = await fetch(`/api/trabajos/eliminar/${id}`, {
@@ -261,7 +265,7 @@ try {
                             const data = await res.json();
                             
                             if(res.ok && data.success) {
-                                window.location.reload(); // Recarga la tabla para reflejar los cambios
+                                window.location.reload(); 
                             } else {
                                 alert(data.mensaje || "Error al eliminar el registro.");
                             }
@@ -275,10 +279,30 @@ try {
     </script>
 
     <style>
-        /* Estilos para el scrollbar de la tabla */
         .custom-scroll::-webkit-scrollbar { height: 8px; }
         .custom-scroll::-webkit-scrollbar-track { background: #050A18; border-radius: 10px; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
         .custom-scroll::-webkit-scrollbar-thumb:hover { background: #00B4D8; }
     </style>
 </Layout>
+
+<script is:inline>
+    // Si el usuario regresa usando la flecha del navegador, forzamos recarga
+    window.addEventListener('pageshow', function(event) {
+        if (event.persisted) {
+            window.location.reload(); 
+        }
+    });
+
+    // Seguridad al cerrar sesión
+    document.addEventListener('DOMContentLoaded', () => {
+        const btnLogout = document.getElementById('btn-logout');
+        if (btnLogout) {
+            btnLogout.addEventListener('click', () => {
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.replace('/');
+            });
+        }
+    });
+</script>
